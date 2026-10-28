@@ -309,49 +309,110 @@ function previewImage(event) {
 
 }
 
-
 function analyzeCrop() {
-
-    const file =
-        document.getElementById("leafImage").files[0];
-
+    const file = document.getElementById("leafImage").files[0];
 
     if (!file) {
-
         alert("Please upload a turmeric leaf image first.");
-
         return;
-
     }
 
+    const image = document.getElementById("leafPreview");
 
-    document.getElementById("health").innerText =
-        "Leaf health needs attention.";
+    if (!image.complete || image.naturalWidth === 0) {
+        alert("Please wait for the image preview.");
+        return;
+    }
 
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
 
-    document.getElementById("disease").innerText =
-        "Possible disease or pest-related damage detected.";
+    canvas.width = 150;
+    canvas.height = 150;
 
+    context.drawImage(image, 0, 0, 150, 150);
 
-    document.getElementById("water").innerText =
-        "Water management needs monitoring.";
+    const pixels = context.getImageData(0, 0, 150, 150).data;
 
+    let green = 0;
+    let yellow = 0;
+    let brown = 0;
 
-    document.getElementById("recommendation").innerText =
-        "Monitor affected plants, maintain proper irrigation, and inspect the crop regularly.";
+    for (let i = 0; i < pixels.length; i += 4) {
+        const r = pixels[i];
+        const g = pixels[i + 1];
+        const b = pixels[i + 2];
+
+        if (g > r * 1.08 && g > b * 1.05 && g > 35) {
+            green++;
+        } else if (
+            r > b * 1.15 &&
+            g > b * 1.10 &&
+            r > 75 &&
+            g > 55
+        ) {
+            yellow++;
+        } else if (
+            r > g * 1.15 &&
+            g > b * 1.10 &&
+            r > 55 &&
+            g > 25
+        ) {
+            brown++;
+        }
+    }
+
+    const total = green + yellow + brown;
+
+    let health;
+    let disease;
+    let water;
+    let recommendation;
+
+    if (total === 0) {
+        health = "Unable to assess leaf colours.";
+        disease = "No reliable result available.";
+        water = "Check soil moisture manually.";
+        recommendation = "Upload a clear, well-lit leaf image.";
+    } else {
+        const greenPercent = (green / total) * 100;
+        const yellowBrownPercent = ((yellow + brown) / total) * 100;
+
+        health =
+            "Green colour: " + greenPercent.toFixed(1) +
+            "%. Yellow/brown colour: " +
+            yellowBrownPercent.toFixed(1) + "%.";
+
+        if (yellowBrownPercent >= 35) {
+            disease =
+                "Yellow/brown colour patterns observed. Disease is not confirmed.";
+
+            recommendation =
+                "Inspect the leaf for symptoms and consult an agricultural expert.";
+        } else {
+            disease =
+                "Colour screening cannot confirm disease or pest damage.";
+
+            recommendation =
+                "Continue monitoring the plant and inspect for visible symptoms.";
+        }
+
+        water =
+            "Image colour cannot determine water needs. Check soil moisture and field conditions.";
+    }
+
+    document.getElementById("health").innerText = health;
+    document.getElementById("disease").innerText = disease;
+    document.getElementById("water").innerText = water;
+    document.getElementById("recommendation").innerText = recommendation;
+
     sessionStorage.setItem("analysisDone", "true");
-
-sessionStorage.setItem("leafHealth", "Leaf health needs attention.");
-
-sessionStorage.setItem("diseaseStatus", "Possible disease or pest-related damage detected.");
-
-sessionStorage.setItem("waterStatus", "Water management needs monitoring.");
-
-sessionStorage.setItem(
-    "recommendation",
-    "Monitor affected plants, maintain proper irrigation, and inspect the crop regularly."
-);
+    sessionStorage.setItem("leafHealth", health);
+    sessionStorage.setItem("diseaseStatus", disease);
+    sessionStorage.setItem("waterStatus", water);
+    sessionStorage.setItem("recommendation", recommendation);
 }
+
 
 </script>
 
